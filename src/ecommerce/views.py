@@ -2,6 +2,19 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from .models import ProductModel
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import ListView
+
+
+class ProtectedListView(LoginRequiredMixin, ListView):
+    model = ProductModel
+    template_name = "ecommerce/list-view.html"
+    context_object_name = "products"
+    login_url = "ecommerce-login"
+
+    def get_queryset(self):
+        return ProductModel.objects.filter(owner=self.request.user)
 
 # List View
 def product_model_list_view(request):
@@ -18,6 +31,7 @@ def product_model_detail_view(request, pk):
     return render(request, template, context)
 
 # Create View
+@login_required(login_url="ecommerce-login")
 def product_model_create_view(request):
     if request.method == "POST":
         title = request.POST.get('title')
@@ -28,6 +42,7 @@ def product_model_create_view(request):
         product_dimensions = request.POST.get('product_dimensions', '')
 
         product = ProductModel(
+            owner=request.user,
             title=title,
             price=price,
             description=description,
